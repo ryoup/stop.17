@@ -1,4 +1,4 @@
-document.getElementById("uploadForm").addEventListener("submit", function (e) {
+document.getElementById("uploadForm").addEventListener("submit", async function (e) { 
     e.preventDefault(); // ページリロードを防止
 
     const fileInput = document.getElementById("fileInput");
@@ -10,14 +10,20 @@ document.getElementById("uploadForm").addEventListener("submit", function (e) {
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    reader.onload = function () {
+    reader.onload = async function () {
         const img = new Image();
         img.src = reader.result;
         img.onload = async function () {
             console.log("画像のロード完了、解析を開始します");
 
-            // **テンプレート画像を fetch() でロード**
-            const templateImg = await loadTemplateImage("template.png");
+            // **正しいテンプレート画像の URL を指定**
+            const templateImg = await loadTemplateImage("https://ryoup.github.io/3bMRQu247Wtr8pMABzdUVweAFXmnCYHYKuX5ZYX7BhaRMUSHSf7c7scUABxaFfRRRuZ3j85WH4bN4CVMQ2aMQ7sWigCRhEgSg7dw/template.png");
+
+            // **テンプレート画像のロードが失敗した場合は処理を中止**
+            if (!templateImg) {
+                document.getElementById("output").innerHTML = `<p style="color: red;">テンプレート画像の取得に失敗しました。</p>`;
+                return;
+            }
 
             // **OpenCV で解析開始**
             processImage(img, templateImg);
@@ -30,17 +36,23 @@ document.getElementById("uploadForm").addEventListener("submit", function (e) {
 /**
  * `fetch()` を使って CORS 制限を回避しながらテンプレート画像を取得
  */
-async function loadTemplateImage() {
-    const url = "https://ryoup.github.io/3bMRQu247Wtr8pMABzdUVweAFXmnCYHYKuX5ZYX7BhaRMUSHSf7c7scUABxaFfRRRuZ3j85WH4bN4CVMQ2aMQ7sWigCRhEgSg7dw/";
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const img = new Image();
-    img.src = URL.createObjectURL(blob);
-    return new Promise((resolve) => {
-        img.onload = () => resolve(img);
-    });
-}
+async function loadTemplateImage(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("テンプレート画像の取得に失敗しました");
 
+        const blob = await response.blob();
+        const img = new Image();
+        img.src = URL.createObjectURL(blob);
+
+        return new Promise((resolve) => {
+            img.onload = () => resolve(img);
+        });
+    } catch (error) {
+        console.error("❌ テンプレート画像のロードエラー:", error);
+        return null; // エラー時は null を返す
+    }
+}
 
 /**
  * OpenCV.js で画像処理を実行
