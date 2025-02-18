@@ -3,7 +3,7 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
 
     const fileInput = document.getElementById("fileInput");
     if (fileInput.files.length === 0) {
-        alert("画像を選択してください！");
+        document.getElementById("output").innerHTML = `<p style="color: red;">画像を選択してください。</p>`;
         return;
     }
 
@@ -22,17 +22,22 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
 });
 
 function processImage(img) {
-    // OCR で P の座標を取得
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = `<h2>検出中…</h2>`;  // 検出中の表示
+
+    // OCR で P の座標を取得（精度を甘くする）
     Tesseract.recognize(img.src, "eng", {
-        logger: m => console.log(m) // 進行状況をコンソールに出力
+        logger: m => console.log(m),  // 進行状況をコンソールに出力
+        tessedit_char_whitelist: "Pp" // 小文字 p も許可して誤検出を増やす
     }).then(({ data: { words } }) => {
-        const outputDiv = document.getElementById("output");
         outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
         const selectedCoords = [];
-        
+        let detected = false; // P が検出されたか判定
+
         words.forEach(word => {
-            if (word.text === "P") {
+            if (word.text.toUpperCase() === "P") { // P または p を認識
+                detected = true; // P が見つかった
                 const { x0, y0, x1, y1 } = word.bbox;
                 console.log(`P 検出: X=${x0}, Y=${y0}`);
 
@@ -58,8 +63,8 @@ function processImage(img) {
             }
         });
 
-        if (words.length === 0) {
-            outputDiv.innerHTML += "<p>P が見つかりませんでした。</p>";
+        if (!detected) {
+            outputDiv.innerHTML += "<p style='color: red;'>P が見つかりませんでした。</p>";
         }
     });
 }
