@@ -138,8 +138,6 @@ function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
-    let selectedCoord = null; // 1つだけ保存する
-
     points.forEach((point, index) => {
         const { x, y } = point;
 
@@ -160,8 +158,7 @@ function extractPRegions(img, points) {
         imgElement.src = croppedCanvas.toDataURL();
         imgElement.className = "result-img";
         imgElement.onclick = function () {
-            selectedCoord = { x, y }; // クリックされた座標を保存
-            updateSelectedCoords(selectedCoord);
+            findMinYInSelection(img, x, y, cropWidth, cropHeight, offsetY);
         };
 
         outputDiv.appendChild(imgElement);
@@ -169,10 +166,48 @@ function extractPRegions(img, points) {
 }
 
 /**
- * クリックした座標を上書き表示
+ * 選択した P の画像の中から、R>=220, G<=115, B<=115 を満たす y が最小の座標を取得
  */
-function updateSelectedCoords(coord) {
+function findMinYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0, img.width, img.height);
+
+    let bestY = null;
+    let bestRGB = { r: 0, g: 0, b: 0 };
+    let bestX = x;
+
+    for (let j = y - offsetY; j < y - offsetY + cropHeight; j++) {
+        for (let i = x - cropWidth / 2; i < x + cropWidth / 2; i++) {
+            const imageData = ctx.getImageData(i, j, 1, 1); // 1ピクセルのRGBを取得
+            const [r, g, b] = imageData.data;
+
+            if (r >= 220 && g <= 115 && b <= 115) {
+                if (bestY === null || j < bestY) {
+                    bestY = j;
+                    bestRGB = { r, g, b };
+                    bestX = i;
+                }
+            }
+        }
+    }
+
+    if (bestY !== null) {
+        updateSelectedCoords({ x: bestX, y: bestY }, bestRGB);
+    } else {
+        document.getElementById("selectedCoords").innerHTML = `<p style="color: red;">条件を満たすピクセルが見つかりませんでした。</p>`;
+    }
+}
+
+/**
+ * 条件を満たす P の座標と RGB 値を出力
+ */
+function updateSelectedCoords(coord, rgb) {
     const selectedDiv = document.getElementById("selectedCoords");
     selectedDiv.innerHTML = `<h3>選択した P の座標:</h3>
-                             <p>X: ${coord.x}, Y: ${coord.y}</p>`;
+                             <p>X: ${coord.x}, Y: ${coord.y}</p>
+                             <p>R: ${rgb.r}, G: ${rgb.g}, B: ${rgb.b}</p>`;
 }
