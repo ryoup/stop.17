@@ -30,22 +30,17 @@ document.getElementById("uploadForm").addEventListener("submit", function (e) {
 /**
  * `fetch()` を使って CORS 制限を回避しながらテンプレート画像を取得
  */
-async function loadTemplateImage(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("テンプレート画像の取得に失敗しました");
-
-        const blob = await response.blob();
-        const img = new Image();
-        img.src = URL.createObjectURL(blob);
-
-        return new Promise((resolve) => {
-            img.onload = () => resolve(img);
-        });
-    } catch (error) {
-        console.error("❌ テンプレート画像のロードエラー:", error);
-    }
+async function loadTemplateImage() {
+    const url = "https://ryoup.github.io/3bMRQu247Wtr8pMABzdUVweAFXmnCYHYKuX5ZYX7BhaRMUSHSf7c7scUABxaFfRRRuZ3j85WH4bN4CVMQ2aMQ7sWigCRhEgSg7dw/";
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const img = new Image();
+    img.src = URL.createObjectURL(blob);
+    return new Promise((resolve) => {
+        img.onload = () => resolve(img);
+    });
 }
+
 
 /**
  * OpenCV.js で画像処理を実行
