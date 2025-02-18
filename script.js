@@ -78,23 +78,32 @@ function processImage(img, templateImg) {
         templateCanvas.height = templateImg.height;
         templateCtx.drawImage(templateImg, 0, 0, templateImg.width, templateImg.height);
 
-        const template = cv.imread(templateCanvas); // `cv.imread()` に `<canvas>` を渡す
+        const template = cv.imread(templateCanvas);
 
         const dst = new cv.Mat();
         const mask = new cv.Mat();
 
-        // **テンプレートマッチング（類似度を計算）**
+        // **テンプレートマッチング**
         cv.matchTemplate(src, template, dst, cv.TM_CCOEFF_NORMED, mask);
 
-        // **類似度が高い位置を検出**
-        const minMaxLoc = cv.minMaxLoc(dst, mask);
-        const maxPoint = minMaxLoc.maxLoc; // 類似度が最大の座標
-        const matchVal = minMaxLoc.maxVal; // 類似度の値（1.0に近いほど良い）
+        // **類似度がしきい値を超えたすべての候補を取得**
+        const threshold = 0.7; // しきい値（高いほど厳しくなる）
+        const points = [];
 
-        console.log(`最大類似度: ${matchVal}, X=${maxPoint.x}, Y=${maxPoint.y}`);
+        for (let y = 0; y < dst.rows; y++) {
+            for (let x = 0; x < dst.cols; x++) {
+                const similarity = dst.floatAt(y, x);
+                if (similarity >= threshold) {
+                    points.push({ x, y, similarity });
+                }
+            }
+        }
 
-        if (matchVal >= 0.7) { // **類似度が高い場合のみ P を認識**
-            extractPRegion(img, maxPoint.x, maxPoint.y);
+        console.log(`検出された P の候補数: ${points.length}`);
+
+        if (points.length > 0) {
+            points.sort((a, b) => b.similarity - a.similarity); // 類似度が高い順にソート
+            extractPRegions(img, points);
         } else {
             document.getElementById("output").innerHTML = "<p style='color: red;'>P が見つかりませんでした。</p>";
         }
@@ -107,33 +116,37 @@ function processImage(img, templateImg) {
 }
 
 /**
- * 検出した P の周囲をクロップして表示
+ * 複数の P の候補を切り取って表示
  */
-function extractPRegion(img, x, y) {
+function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
     const selectedCoords = [];
 
-    // **P の周囲 50px を切り取る**
-    const croppedCanvas = document.createElement("canvas");
-    const ctx = croppedCanvas.getContext("2d");
+    points.forEach((point, index) => {
+        const { x, y } = point;
 
-    const cropSize = 50;
-    croppedCanvas.width = cropSize;
-    croppedCanvas.height = cropSize;
-    ctx.drawImage(img, x - cropSize / 2, y - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
+        // **P の周囲 50px を切り取る**
+        const croppedCanvas = document.createElement("canvas");
+        const ctx = croppedCanvas.getContext("2d");
 
-    // **画像を表示し、クリックで座標を取得**
-    const imgElement = document.createElement("img");
-    imgElement.src = croppedCanvas.toDataURL();
-    imgElement.className = "result-img";
-    imgElement.onclick = function () {
-        selectedCoords.push({ x, y });
-        updateSelectedCoords(selectedCoords);
-    };
+        const cropSize = 50;
+        croppedCanvas.width = cropSize;
+        croppedCanvas.height = cropSize;
+        ctx.drawImage(img, x - cropSize / 2, y - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
 
-    outputDiv.appendChild(imgElement);
+        // **画像を表示し、クリックで座標を取得**
+        const imgElement = document.createElement("img");
+        imgElement.src = croppedCanvas.toDataURL();
+        imgElement.className = "result-img";
+        imgElement.onclick = function () {
+            selectedCoords.push({ x, y });
+            updateSelectedCoords(selectedCoords);
+        };
+
+        outputDiv.appendChild(imgElement);
+    });
 }
 
 /**
