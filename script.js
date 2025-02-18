@@ -143,24 +143,22 @@ function extractPRegions(img, points) {
     points.forEach((point, index) => {
         const { x, y } = point;
 
-        // **切り取り範囲を調整**
-        const cropWidth = 200; // 横幅を 80px に拡大
-        const cropHeight = 200; // 縦を 100px に拡大（より下を含める）
-        const offsetY = 15; // P の位置より 10px 上から開始（より下を多く含める）
+        // **切り取り範囲**
+        const cropWidth = 200; // 横幅を80px
+        const cropHeight = 200; // 縦幅を100px
+        const offsetY = 15; // P の位置より 10px 上から開始
 
         const croppedCanvas = document.createElement("canvas");
         const ctx = croppedCanvas.getContext("2d");
 
         croppedCanvas.width = cropWidth;
         croppedCanvas.height = cropHeight;
-
-        // **画像の切り取りを実行（より下を含めるため、y - offsetY で調整）**
         ctx.drawImage(img, x - cropWidth / 2, y - offsetY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
         // **画像を表示し、クリックで座標を取得**
         const imgElement = document.createElement("img");
         imgElement.src = croppedCanvas.toDataURL();
-        imgElement.className = "result-img";
+        imgElement.className = "result-img"; // CSS でサイズ調整
         imgElement.onclick = function () {
             selectedCoords.push({ x, y });
             updateSelectedCoords(selectedCoords);
@@ -169,6 +167,7 @@ function extractPRegions(img, points) {
         outputDiv.appendChild(imgElement);
     });
 }
+
 
 
 /**

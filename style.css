@@ -36,10 +36,13 @@ button:hover {
 }
 
 .result-img {
-    border: 2px solid #000;
-    cursor: pointer;
-    transition: transform 0.2s;
+    width: 40px;  /* 小さく表示 */
+    height: auto;  /* 縦横比を維持 */
+    margin: 5px;   /* 余白をつける */
+    cursor: pointer; /* クリックしやすく */
+    border: 1px solid #ccc; /* 見やすくするための枠線 */
 }
+
 
 .result-img:hover {
     transform: scale(1.1);
