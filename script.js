@@ -138,13 +138,13 @@ function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
-    const selectedCoords = [];
+    let selectedCoord = null; // 1つだけ保存する
 
     points.forEach((point, index) => {
         const { x, y } = point;
 
         // **切り取り範囲**
-        const cropWidth = 200; // 横幅を80px
+        const cropWidth = 20; // 横幅を80px
         const cropHeight = 200; // 縦幅を100px
         const offsetY = 15; // P の位置より 10px 上から開始
 
@@ -158,22 +158,21 @@ function extractPRegions(img, points) {
         // **画像を表示し、クリックで座標を取得**
         const imgElement = document.createElement("img");
         imgElement.src = croppedCanvas.toDataURL();
-        imgElement.className = "result-img"; // CSS でサイズ調整
+        imgElement.className = "result-img";
         imgElement.onclick = function () {
-            selectedCoords.push({ x, y });
-            updateSelectedCoords(selectedCoords);
+            selectedCoord = { x, y }; // クリックされた座標を保存
+            updateSelectedCoords(selectedCoord);
         };
 
         outputDiv.appendChild(imgElement);
     });
 }
 
-
-
 /**
- * ユーザーが選択した P の座標を表示
+ * クリックした座標を上書き表示
  */
-function updateSelectedCoords(coords) {
+function updateSelectedCoords(coord) {
     const selectedDiv = document.getElementById("selectedCoords");
-    selectedDiv.innerHTML = "<h3>選択した P の座標:</h3>" + coords.map(c => `<p>X: ${c.x}, Y: ${c.y}</p>`).join("");
+    selectedDiv.innerHTML = `<h3>選択した P の座標:</h3>
+                             <p>X: ${coord.x}, Y: ${coord.y}</p>`;
 }
