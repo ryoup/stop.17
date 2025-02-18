@@ -1,124 +1,70 @@
 document.getElementById("uploadForm").addEventListener("submit", function(e) {
-    e.preventDefault();
+    e.preventDefault(); // ページリロードを防止
 
     const fileInput = document.getElementById("fileInput");
     if (fileInput.files.length === 0) {
-        document.getElementById("result").innerHTML = `<p style="color:red;">画像を選択してください。</p>`;
+        alert("画像を選択してください！");
         return;
     }
 
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    reader.onload = function(event) {
-        const imageDataUrl = event.target.result;
-
+    reader.onload = function() {
         const img = new Image();
-        img.src = imageDataUrl;
         img.onload = function() {
-            console.log("✅ jsfeat がロードされているか:", jsfeat); // ログで確認
             processImage(img);
         };
+        img.src = reader.result;
     };
 
     reader.readAsDataURL(file);
 });
 
 function processImage(img) {
-    console.log("🖼️ 画像処理開始");
+    // OCR で P の座標を取得
+    Tesseract.recognize(img.src, "eng", {
+        logger: m => console.log(m) // 進行状況をコンソールに出力
+    }).then(({ data: { words } }) => {
+        const outputDiv = document.getElementById("output");
+        outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
-    // 画像の描画
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0, img.width, img.height);
+        const selectedCoords = [];
+        
+        words.forEach(word => {
+            if (word.text === "P") {
+                const { x0, y0, x1, y1 } = word.bbox;
+                console.log(`P 検出: X=${x0}, Y=${y0}`);
 
-    if (typeof jsfeat === "undefined") {
-        console.error("❌ jsfeat がロードされていません。CDN の URL を確認してください。");
-        document.getElementById("result").innerHTML = `<p style="color:red;">エラー: jsfeat がロードされていません。</p>`;
-        return;
-    }
+                // P の周囲 50px を切り取る
+                const croppedCanvas = document.createElement("canvas");
+                const ctx = croppedCanvas.getContext("2d");
 
-    // jsfeat を使ってエッジ検出
-    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let grayImg = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8C1_t);
-    let edgeImg = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8C1_t);
+                const cropSize = 50;
+                croppedCanvas.width = cropSize;
+                croppedCanvas.height = cropSize;
+                ctx.drawImage(img, x0 - cropSize / 2, y0 - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
 
-    jsfeat.imgproc.grayscale(imageData.data, canvas.width, canvas.height, grayImg);
-    jsfeat.imgproc.canny(grayImg, edgeImg, 20, 50);
+                // 画像を表示し、クリックで座標を取得
+                const imgElement = document.createElement("img");
+                imgElement.src = croppedCanvas.toDataURL();
+                imgElement.className = "result-img";
+                imgElement.onclick = function() {
+                    selectedCoords.push({ x: x0, y: y0 });
+                    updateSelectedCoords(selectedCoords);
+                };
 
-    let edgeData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    let i = edgeImg.cols * edgeImg.rows;
-    while (--i >= 0) {
-        let pix = edgeImg.data[i];
-        edgeData.data[i * 4] = pix;
-        edgeData.data[i * 4 + 1] = pix;
-        edgeData.data[i * 4 + 2] = pix;
-        edgeData.data[i * 4 + 3] = 255;
-    }
-    ctx.putImageData(edgeData, 0, 0);
-
-    let resultHTML = `<h2>解析結果</h2>`;
-    let detectedP = 0;
-    const contours = detectContours(edgeImg);
-
-    contours.forEach((rect, idx) => {
-        const roiCanvas = document.createElement("canvas");
-        const roiCtx = roiCanvas.getContext("2d");
-        roiCanvas.width = rect.width;
-        roiCanvas.height = rect.height;
-        roiCtx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
-
-        detectedP++;
-        resultHTML += `<div>
-                          <p>P${detectedP}: 位置 (x: ${rect.x}, y: ${rect.y})</p>
-                          <img src="${roiCanvas.toDataURL()}" alt="P cutout">
-                       </div>`;
-    });
-
-    if (detectedP === 0) {
-        resultHTML = `<p style="color:red;">P が検出されませんでした。</p>`;
-    }
-
-    document.getElementById("result").innerHTML = resultHTML;
-}
-
-function detectContours(edgeImg) {
-    let contours = [];
-    for (let y = 0; y < edgeImg.rows; y++) {
-        for (let x = 0; x < edgeImg.cols; x++) {
-            if (edgeImg.data[y * edgeImg.cols + x] > 0) {
-                let rect = floodFill(edgeImg, x, y);
-                if (rect) contours.push(rect);
+                outputDiv.appendChild(imgElement);
             }
+        });
+
+        if (words.length === 0) {
+            outputDiv.innerHTML += "<p>P が見つかりませんでした。</p>";
         }
-    }
-    return contours;
+    });
 }
 
-function floodFill(edgeImg, startX, startY) {
-    const stack = [[startX, startY]];
-    let minX = startX, maxX = startX, minY = startY, maxY = startY;
-    const width = edgeImg.cols, height = edgeImg.rows;
-
-    while (stack.length > 0) {
-        const [x, y] = stack.pop();
-        if (x < 0 || y < 0 || x >= width || y >= height) continue;
-        if (edgeImg.data[y * width + x] === 0) continue;
-
-        edgeImg.data[y * width + x] = 0;
-
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y);
-
-        stack.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]);
-    }
-
-    if (maxX - minX > 5 && maxY - minY > 5) {
-        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-    }
-    return null;
+function updateSelectedCoords(coords) {
+    const selectedDiv = document.getElementById("selectedCoords");
+    selectedDiv.innerHTML = "<h3>選択した P の座標:</h3>" + coords.map(c => `<p>X: ${c.x}, Y: ${c.y}</p>`).join("");
 }

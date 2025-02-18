@@ -1,23 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P抽出チェッカー</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像内のP検出</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>P抽出チェッカー</h1>
-  <form id="uploadForm">
-    <label for="fileInput">画像を選択:</label><br>
-    <input type="file" id="fileInput" accept="image/*"><br><br>
-    <button type="submit">解析開始</button>
-  </form>
-  <div id="result"></div>
-
-  <!-- jsfeat ライブラリを先に読み込む -->
-  <script src="https://cdn.jsdelivr.net/npm/jsfeat"></script>
-  <!-- 次に自分のスクリプトを読み込む -->
-  <script src="script.js"></script>
+    <h1>画像内のP検出</h1>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" accept="image/*"><br><br>
+        <button type="submit">解析開始</button>
+    </form>
+    <div id="output"></div> <!-- 切り抜いたPの画像一覧を表示 -->
+    <h2>選択した座標</h2>
+    <div id="selectedCoords"></div> <!-- 選択したPの座標を表示 -->
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
 </body>
 </html>

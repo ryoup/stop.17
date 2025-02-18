@@ -2,41 +2,45 @@ body {
     font-family: Arial, sans-serif;
     text-align: center;
     margin: 20px;
-  }
-  
-  h1 {
-    font-size: 28px;
+}
+
+h1 {
+    font-size: 24px;
     margin-bottom: 20px;
-  }
-  
-  form {
+}
+
+form {
     margin-bottom: 20px;
-  }
-  
-  input[type="file"] {
+}
+
+button {
     font-size: 18px;
-    padding: 10px;
-    width: 80%;
-    max-width: 400px;
-    margin: 10px 0;
-  }
-  
-  button {
-    font-size: 20px;
-    padding: 15px 30px;
+    padding: 10px 20px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  button:hover {
+}
+
+button:hover {
     background-color: #0056b3;
-  }
-  
-  #result {
+}
+
+#output {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
     margin-top: 20px;
-  }
-  
+}
+
+.result-img {
+    border: 2px solid #000;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.result-img:hover {
+    transform: scale(1.1);
+}
