@@ -36,8 +36,8 @@ button:hover {
 }
 
 .result-img {
-    width: 40px;  /* 小さく表示 */
-    height: auto;  /* 縦横比を維持 */
+    width: 100px;  /* 小さく表示 */
+    height: 100px;  /* 縦横比を維持 */
     margin: 5px;   /* 余白をつける */
     cursor: pointer; /* クリックしやすく */
     border: 1px solid #ccc; /* 見やすくするための枠線 */
