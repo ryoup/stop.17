@@ -144,7 +144,7 @@ function extractPRegions(img, points) {
         const { x, y } = point;
 
         // **切り取り範囲**
-        const cropWidth = 20; // 横幅を80px
+        const cropWidth = 200; // 横幅を80px
         const cropHeight = 200; // 縦幅を100px
         const offsetY = 15; // P の位置より 10px 上から開始
 
