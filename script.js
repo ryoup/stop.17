@@ -131,10 +131,13 @@ function extractPRegions(img, points) {
         const croppedCanvas = document.createElement("canvas");
         const ctx = croppedCanvas.getContext("2d");
 
-        const cropSize = 50;
-        croppedCanvas.width = cropSize;
-        croppedCanvas.height = cropSize;
-        ctx.drawImage(img, x - cropSize / 2, y - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
+        const cropWidth = 50; // 横幅は50pxのまま
+        const cropHeight = 80; // 縦を80pxに拡大
+        croppedCanvas.width = cropWidth;
+        croppedCanvas.height = cropHeight;
+
+        // **yの位置を少し上からにして、下側をより多く含める**
+        ctx.drawImage(img, x - cropWidth / 2, y - 10, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
         // **画像を表示し、クリックで座標を取得**
         const imgElement = document.createElement("img");
