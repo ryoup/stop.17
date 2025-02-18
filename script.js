@@ -87,9 +87,9 @@ function processImage(img, templateImg) {
         cv.matchTemplate(src, template, dst, cv.TM_CCOEFF_NORMED, mask);
 
         // **類似度がしきい値を超えたすべての候補を取得**
-        const threshold = 0.3; // しきい値（高いほど厳しくなる）
+        const threshold = 0.5; // しきい値（高いほど厳しくなる）
         const points = [];
-        const minDistance = 10; // 30px 以内の重複を排除
+        const minDistance = 20; // 30px 以内の重複を排除
 
         for (let y = 0; y < dst.rows; y++) {
             for (let x = 0; x < dst.cols; x++) {
