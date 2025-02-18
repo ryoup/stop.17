@@ -89,17 +89,32 @@ function processImage(img, templateImg) {
         // **類似度がしきい値を超えたすべての候補を取得**
         const threshold = 0.7; // しきい値（高いほど厳しくなる）
         const points = [];
+        const minDistance = 30; // 30px 以内の重複を排除
 
         for (let y = 0; y < dst.rows; y++) {
             for (let x = 0; x < dst.cols; x++) {
                 const similarity = dst.floatAt(y, x);
                 if (similarity >= threshold) {
-                    points.push({ x, y, similarity });
+                    let isDuplicate = false;
+
+                    // **既に検出された P の座標と比較**
+                    for (const point of points) {
+                        const distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+                        if (distance < minDistance) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+
+                    // **新しい P の座標なら追加**
+                    if (!isDuplicate) {
+                        points.push({ x, y, similarity });
+                    }
                 }
             }
         }
 
-        console.log(`検出された P の候補数: ${points.length}`);
+        console.log(`検出された P の候補数（重複排除後）: ${points.length}`);
 
         if (points.length > 0) {
             points.sort((a, b) => b.similarity - a.similarity); // 類似度が高い順にソート
@@ -114,6 +129,7 @@ function processImage(img, templateImg) {
         mask.delete();
     }, 500);
 }
+
 
 /**
  * 複数の P の候補を切り取って表示
