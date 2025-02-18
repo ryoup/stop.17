@@ -11,23 +11,26 @@ document.getElementById("uploadForm").addEventListener("submit", function (e) {
     const reader = new FileReader();
 
     reader.onload = function () {
-        const img = new Image();
-        img.onload = function () {
-            processImage(img);
-        };
+        const img = document.createElement("img");
+        img.id = "uploadedImage"; // OpenCV.js で認識できるように ID をつける
         img.src = reader.result;
+        img.style.display = "none"; // ユーザーには見せずに処理
+        document.body.appendChild(img);
+
+        img.onload = function () {
+            processImage("uploadedImage"); // 画像 ID を渡して処理
+        };
     };
 
     reader.readAsDataURL(file);
 });
 
-function processImage(img) {
+function processImage(imageId) {
     document.getElementById("output").innerHTML = "<h2>検出中…</h2>";
 
-    // OpenCV の処理を実行
     setTimeout(() => {
-        const src = cv.imread(img);
-        const template = cv.imread("template.png"); // P の見本画像を読み込む
+        const src = cv.imread(imageId); // 修正：画像の ID を渡す
+        const template = cv.imread("template.png"); // P の見本画像
         const dst = new cv.Mat();
         const mask = new cv.Mat();
 
@@ -42,7 +45,7 @@ function processImage(img) {
         console.log(`最大類似度: ${matchVal}, X=${maxPoint.x}, Y=${maxPoint.y}`);
 
         if (matchVal >= 0.7) { // 類似度が高い場合のみ P を認識
-            extractPRegion(img, maxPoint.x, maxPoint.y);
+            extractPRegion(imageId, maxPoint.x, maxPoint.y);
         } else {
             document.getElementById("output").innerHTML = "<p style='color: red;'>P が見つかりませんでした。</p>";
         }
@@ -54,13 +57,14 @@ function processImage(img) {
     }, 500);
 }
 
-function extractPRegion(img, x, y) {
+function extractPRegion(imageId, x, y) {
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
     const selectedCoords = [];
 
     // P の周囲 50px を切り取る
+    const img = document.getElementById(imageId);
     const croppedCanvas = document.createElement("canvas");
     const ctx = croppedCanvas.getContext("2d");
 
