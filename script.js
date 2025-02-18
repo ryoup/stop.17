@@ -1,4 +1,4 @@
-document.getElementById("uploadForm").addEventListener("submit", function(e) {
+document.getElementById("uploadForm").addEventListener("submit", function (e) {
     e.preventDefault(); // ページリロードを防止
 
     const fileInput = document.getElementById("fileInput");
@@ -10,10 +10,10 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
     const file = fileInput.files[0];
     const reader = new FileReader();
 
-    reader.onload = function() {
+    reader.onload = function () {
         const img = new Image();
-        img.onload = function() {
-            preprocessImage(img); // 画像の前処理を実行
+        img.onload = function () {
+            processImage(img);
         };
         img.src = reader.result;
     };
@@ -21,78 +21,64 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
     reader.readAsDataURL(file);
 });
 
-// ** 画像の前処理（グレースケール＆コントラスト調整）**
-function preprocessImage(img) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
+function processImage(img) {
+    document.getElementById("output").innerHTML = "<h2>検出中…</h2>";
 
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0, img.width, img.height);
+    // OpenCV の処理を実行
+    setTimeout(() => {
+        const src = cv.imread(img);
+        const template = cv.imread("template.png"); // P の見本画像を読み込む
+        const dst = new cv.Mat();
+        const mask = new cv.Mat();
 
-    // グレースケール変換
-    const imageData = ctx.getImageData(0, 0, img.width, img.height);
-    const data = imageData.data;
+        // テンプレートマッチング（類似度を計算）
+        cv.matchTemplate(src, template, dst, cv.TM_CCOEFF_NORMED, mask);
 
-    for (let i = 0; i < data.length; i += 4) {
-        const gray = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
-        data[i] = gray;      // R
-        data[i + 1] = gray;  // G
-        data[i + 2] = gray;  // B
-    }
+        // 類似度が高い位置を検出
+        const minMaxLoc = cv.minMaxLoc(dst, mask);
+        const maxPoint = minMaxLoc.maxLoc; // 類似度が最大の座標
+        const matchVal = minMaxLoc.maxVal; // 類似度の値（1.0に近いほど良い）
 
-    ctx.putImageData(imageData, 0, 0);
+        console.log(`最大類似度: ${matchVal}, X=${maxPoint.x}, Y=${maxPoint.y}`);
 
-    // OCRの実行
-    processImage(canvas);
+        if (matchVal >= 0.7) { // 類似度が高い場合のみ P を認識
+            extractPRegion(img, maxPoint.x, maxPoint.y);
+        } else {
+            document.getElementById("output").innerHTML = "<p style='color: red;'>P が見つかりませんでした。</p>";
+        }
+
+        src.delete();
+        template.delete();
+        dst.delete();
+        mask.delete();
+    }, 500);
 }
 
-function processImage(canvas) {
+function extractPRegion(img, x, y) {
     const outputDiv = document.getElementById("output");
-    outputDiv.innerHTML = `<h2>検出中…</h2>`;  // 検出中の表示
+    outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
-    // OCR で P の座標を取得（精度を甘くする）
-    Tesseract.recognize(canvas, "ocrb", {  // `ocrb` で精度向上
-        logger: m => console.log(m),
-        tessedit_char_whitelist: "PpFBR" // 「P」に似た文字も許可
-    }).then(({ data: { words } }) => {
-        outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
+    const selectedCoords = [];
 
-        const selectedCoords = [];
-        let detected = false; // P が検出されたか判定
+    // P の周囲 50px を切り取る
+    const croppedCanvas = document.createElement("canvas");
+    const ctx = croppedCanvas.getContext("2d");
 
-        words.forEach(word => {
-            if (word.text.toUpperCase() === "P") { // P または p を認識
-                detected = true;
-                const { x0, y0, x1, y1 } = word.bbox;
-                console.log(`P 検出: X=${x0}, Y=${y0}`);
+    const cropSize = 50;
+    croppedCanvas.width = cropSize;
+    croppedCanvas.height = cropSize;
+    ctx.drawImage(img, x - cropSize / 2, y - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
 
-                // P の周囲 50px を切り取る
-                const croppedCanvas = document.createElement("canvas");
-                const ctx = croppedCanvas.getContext("2d");
+    // 画像を表示し、クリックで座標を取得
+    const imgElement = document.createElement("img");
+    imgElement.src = croppedCanvas.toDataURL();
+    imgElement.className = "result-img";
+    imgElement.onclick = function () {
+        selectedCoords.push({ x, y });
+        updateSelectedCoords(selectedCoords);
+    };
 
-                const cropSize = 50;
-                croppedCanvas.width = cropSize;
-                croppedCanvas.height = cropSize;
-                ctx.drawImage(canvas, x0 - cropSize / 2, y0 - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
-
-                // 画像を表示し、クリックで座標を取得
-                const imgElement = document.createElement("img");
-                imgElement.src = croppedCanvas.toDataURL();
-                imgElement.className = "result-img";
-                imgElement.onclick = function() {
-                    selectedCoords.push({ x: x0, y: y0 });
-                    updateSelectedCoords(selectedCoords);
-                };
-
-                outputDiv.appendChild(imgElement);
-            }
-        });
-
-        if (!detected) {
-            outputDiv.innerHTML += "<p style='color: red;'>P が見つかりませんでした。</p>";
-        }
-    });
+    outputDiv.appendChild(imgElement);
 }
 
 function updateSelectedCoords(coords) {
