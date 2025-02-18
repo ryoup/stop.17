@@ -1,71 +1,82 @@
 document.getElementById("uploadForm").addEventListener("submit", function(e) {
     e.preventDefault();
-  
+
     const fileInput = document.getElementById("fileInput");
     if (fileInput.files.length === 0) {
-      document.getElementById("result").innerHTML = `<p style="color:red;">画像を選択してください。</p>`;
-      return;
+        document.getElementById("result").innerHTML = `<p style="color:red;">画像を選択してください。</p>`;
+        return;
     }
-  
+
     const file = fileInput.files[0];
     const reader = new FileReader();
-  
+
     reader.onload = function(event) {
-      const imageDataUrl = event.target.result;
-  
-      // Tesseract.js で画像内の文字認識を実行
-      Tesseract.recognize(imageDataUrl, 'eng', {
-        logger: m => {} // ログは不要なら空関数
-      }).then(result => {
-        // result.data.symbols に認識されたシンボルの配列が入る
-        const symbols = result.data.symbols;
-        // Pまたはpのみを抽出
-        const pSymbols = symbols.filter(sym => sym.text === "P" || sym.text === "p");
-  
-        if (pSymbols.length === 0) {
-          document.getElementById("result").innerHTML = `<p style="color:red;">画像からPが検出されませんでした。</p>`;
-          return;
-        }
-  
-        // 結果表示用のHTMLを初期化
-        let resultsHTML = `<h2>解析結果</h2>`;
-  
-        // 画像を表示するための隠しcanvasを作成
-        const originalImage = new Image();
-        originalImage.src = imageDataUrl;
-        originalImage.onload = function() {
-          // すべてのPシンボルについて処理
-          pSymbols.forEach((sym, idx) => {
-            // sym.bbox に { x0, y0, x1, y1 } が入っている
-            const bbox = sym.bbox;
-            // 必要なら余白を追加（ここでは0）
-            const margin = 0;
-            const sx = Math.max(bbox.x0 - margin, 0);
-            const sy = Math.max(bbox.y0 - margin, 0);
-            const sw = Math.min(bbox.x1 - bbox.x0 + margin * 2, originalImage.width - sx);
-            const sh = Math.min(bbox.y1 - bbox.y0 + margin * 2, originalImage.height - sy);
-  
-            // Pの切り出し用canvasを作成
-            const canvas = document.createElement("canvas");
-            canvas.width = sw;
-            canvas.height = sh;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(originalImage, sx, sy, sw, sh, 0, 0, sw, sh);
-  
-            // バウンディングボックスの左上座標を表示（ここでは sx, sy を表示）
-            resultsHTML += `<div style="margin-bottom:20px; border: 1px solid #ccc; padding:10px;">
-                              <p>P${idx+1}: 位置 (x: ${sx}, y: ${sy})</p>
-                              <img src="${canvas.toDataURL()}" alt="P cutout">
-                            </div>`;
-          });
-          document.getElementById("result").innerHTML = resultsHTML;
+        const imageDataUrl = event.target.result;
+
+        // 画像の読み込み
+        const img = new Image();
+        img.src = imageDataUrl;
+        img.onload = function() {
+            processImage(img);
         };
-      }).catch(error => {
-        document.getElementById("result").innerHTML = `<p style="color:red;">エラーが発生しました。</p>`;
-        console.error(error);
-      });
     };
-  
+
     reader.readAsDataURL(file);
-  });
-  
+});
+
+function processImage(img) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0, img.width, img.height);
+
+    // OpenCV.js の処理開始
+    let src = cv.imread(canvas); // 画像を OpenCV に読み込む
+    let gray = new cv.Mat();
+    let thresh = new cv.Mat();
+    let contours = new cv.MatVector();
+    let hierarchy = new cv.Mat();
+
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0); // グレースケール化
+    cv.threshold(gray, thresh, 150, 255, cv.THRESH_BINARY_INV); // しきい値処理（黒背景・白文字）
+
+    cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+    let resultHTML = `<h2>解析結果</h2>`;
+    let detectedP = 0;
+    const minSize = 30; // 小さすぎるノイズを除外
+
+    for (let i = 0; i < contours.size(); i++) {
+        let contour = contours.get(i);
+        let rect = cv.boundingRect(contour);
+
+        if (rect.width > minSize && rect.height > minSize) {
+            // P らしき形状の切り出し
+            const roiCanvas = document.createElement("canvas");
+            const roiCtx = roiCanvas.getContext("2d");
+            roiCanvas.width = rect.width;
+            roiCanvas.height = rect.height;
+            roiCtx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+
+            detectedP++;
+            resultHTML += `<div>
+                              <p>P${detectedP}: 位置 (x: ${rect.x}, y: ${rect.y})</p>
+                              <img src="${roiCanvas.toDataURL()}" alt="P cutout">
+                           </div>`;
+        }
+    }
+
+    if (detectedP === 0) {
+        resultHTML = `<p style="color:red;">P が検出されませんでした。</p>`;
+    }
+
+    document.getElementById("result").innerHTML = resultHTML;
+
+    // メモリを解放
+    src.delete();
+    gray.delete();
+    thresh.delete();
+    contours.delete();
+    hierarchy.delete();
+}
