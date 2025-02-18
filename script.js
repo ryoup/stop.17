@@ -97,7 +97,7 @@ function processImage(img, templateImg) {
  */
 function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
-    outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
+    outputDiv.innerHTML = "<h3>キャラ候補</h3>";
 
     points.forEach(({ x, y }) => {
         const cropWidth = 200;
@@ -155,7 +155,7 @@ function findMinXYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
  * 条件を満たす P の座標と RGB 値を出力
  */
 function updateSelectedCoords(coord, rgb) {
-    document.getElementById("selectedCoords").innerHTML = `<h3>選択した P の座標:</h3>
-                                                           <p>X: ${coord.x}, Y: ${coord.y}</p>
-                                                           <p>R: ${rgb.r}, G: ${rgb.g}, B: ${rgb.b}</p>`;
+    document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラのデータ</h3>
+                                                           <p>X,Y ： ${coord.x}, ${coord.y}</p>
+                                                           <p>R,G,B ： ${rgb.r}, ${rgb.g}, ${rgb.b}</p>`;
 }

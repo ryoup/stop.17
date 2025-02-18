@@ -36,11 +36,11 @@ button:hover {
 }
 
 .result-img {
-    width: 100px;  /* 小さく表示 */
-    height: 100px;  /* 縦横比を維持 */
-    margin: 5px;   /* 余白をつける */
+    display: block; /* 画像を改行表示 */
+    margin-top: 5px; /* 画像とテキストの間隔を調整 */
+    width: 100px; /* 画像サイズを調整 */
+    height: 100px;
     cursor: pointer; /* クリックしやすく */
-    border: 1px solid #ccc; /* 見やすくするための枠線 */
 }
 
 

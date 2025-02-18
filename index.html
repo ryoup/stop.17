@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像内のP検出（テンプレートマッチング）</title>
+    <title>stop position judging tool</title>
     <link rel="stylesheet" href="style.css">
     <script async src="https://docs.opencv.org/4.5.5/opencv.js"></script> <!-- OpenCV.js を読み込み -->
 </head>
 <body>
-    <h1>画像内のP検出（テンプレートマッチング）</h1>
+    <h1>停止位置チェッカー</h1>
     <form id="uploadForm">
         <input type="file" id="fileInput" accept="image/*"><br><br>
         <button type="submit">解析開始</button>
     </form>
-    <div id="output"></div> <!-- P の候補を表示 -->
-    <h2>選択した座標</h2>
+    <div id="output"></div> <!-- P の候補を表示 --><br><br>
     <div id="selectedCoords"></div> <!-- 選択した座標を表示 -->
     <script src="script.js"></script>
 </body>
