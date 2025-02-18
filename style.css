@@ -13,19 +13,31 @@ form {
     margin-bottom: 20px;
 }
 
-button {
+/* ファイル選択ボタンを大きくする */
+input[type="file"] {
     font-size: 18px;
-    padding: 10px 20px;
+    padding: 10px;
+    width: 80%;
+    max-width: 400px;
+    margin: 10px 0;
+}
+
+/* 解析開始ボタンを大きくする */
+button {
+    font-size: 20px;
+    padding: 15px 30px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 button:hover {
     background-color: #0056b3;
 }
+
 
 #output {
     display: flex;
