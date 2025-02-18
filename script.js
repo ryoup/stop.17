@@ -18,7 +18,10 @@ document.getElementById("uploadForm").addEventListener("submit", function (e) {
         document.body.appendChild(img);
 
         img.onload = function () {
-            processImage("uploadedImage"); // 画像 ID を渡して処理
+            console.log("画像のロード完了、解析を開始します");
+            setTimeout(() => { // 画像が完全にロードされるまで少し待つ
+                processImage("uploadedImage"); 
+            }, 100);
         };
     };
 
@@ -29,6 +32,14 @@ function processImage(imageId) {
     document.getElementById("output").innerHTML = "<h2>検出中…</h2>";
 
     setTimeout(() => {
+        const imgElement = document.getElementById(imageId);
+        if (!imgElement) {
+            console.error("エラー: 画像が見つかりませんでした");
+            document.getElementById("output").innerHTML = "<p style='color: red;'>画像の読み込みに失敗しました。</p>";
+            return;
+        }
+
+        console.log("画像を OpenCV で解析開始...");
         const src = cv.imread(imageId); // 修正：画像の ID を渡す
         const template = cv.imread("template.png"); // P の見本画像
         const dst = new cv.Mat();
