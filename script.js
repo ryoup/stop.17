@@ -13,7 +13,6 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
     reader.onload = function(event) {
         const imageDataUrl = event.target.result;
 
-        // 画像の読み込み
         const img = new Image();
         img.src = imageDataUrl;
         img.onload = function() {
@@ -25,34 +24,43 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
 });
 
 function processImage(img) {
+    console.log("🖼️ 画像処理開始");
+
+    // 画像の描画
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0, img.width, img.height);
 
-    // OpenCV.js の処理開始
-    let src = cv.imread(canvas); // 画像を OpenCV に読み込む
-    let gray = new cv.Mat();
-    let thresh = new cv.Mat();
-    let contours = new cv.MatVector();
-    let hierarchy = new cv.Mat();
+    // `jsfeat` を使ってグレースケール & Canny エッジ検出
+    let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let grayImg = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8C1_t);
+    let edgeImg = new jsfeat.matrix_t(canvas.width, canvas.height, jsfeat.U8C1_t);
+    
+    jsfeat.imgproc.grayscale(imageData.data, canvas.width, canvas.height, grayImg);
+    jsfeat.imgproc.canny(grayImg, edgeImg, 20, 50); // Canny エッジ検出
 
-    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0); // グレースケール化
-    cv.threshold(gray, thresh, 150, 255, cv.THRESH_BINARY_INV); // しきい値処理（黒背景・白文字）
+    // canvas にエッジ画像を描画
+    let edgeData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let i = edgeImg.cols * edgeImg.rows;
+    while (--i >= 0) {
+        let pix = edgeImg.data[i];
+        edgeData.data[i * 4] = pix;
+        edgeData.data[i * 4 + 1] = pix;
+        edgeData.data[i * 4 + 2] = pix;
+        edgeData.data[i * 4 + 3] = 255; // 透明度を固定
+    }
+    ctx.putImageData(edgeData, 0, 0);
 
-    cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
+    // Pの候補領域を検出
     let resultHTML = `<h2>解析結果</h2>`;
     let detectedP = 0;
-    const minSize = 30; // 小さすぎるノイズを除外
+    const minSize = 30; // 小さなノイズを除外
+    const contours = detectContours(edgeImg);
 
-    for (let i = 0; i < contours.size(); i++) {
-        let contour = contours.get(i);
-        let rect = cv.boundingRect(contour);
-
+    contours.forEach((rect, idx) => {
         if (rect.width > minSize && rect.height > minSize) {
-            // P らしき形状の切り出し
             const roiCanvas = document.createElement("canvas");
             const roiCtx = roiCanvas.getContext("2d");
             roiCanvas.width = rect.width;
@@ -65,18 +73,52 @@ function processImage(img) {
                               <img src="${roiCanvas.toDataURL()}" alt="P cutout">
                            </div>`;
         }
-    }
+    });
 
     if (detectedP === 0) {
         resultHTML = `<p style="color:red;">P が検出されませんでした。</p>`;
     }
 
     document.getElementById("result").innerHTML = resultHTML;
+}
 
-    // メモリを解放
-    src.delete();
-    gray.delete();
-    thresh.delete();
-    contours.delete();
-    hierarchy.delete();
+// 輪郭検出（簡易版）
+function detectContours(edgeImg) {
+    let contours = [];
+    for (let y = 0; y < edgeImg.rows; y++) {
+        for (let x = 0; x < edgeImg.cols; x++) {
+            if (edgeImg.data[y * edgeImg.cols + x] > 0) { // エッジがある領域
+                let rect = floodFill(edgeImg, x, y);
+                if (rect) contours.push(rect);
+            }
+        }
+    }
+    return contours;
+}
+
+// 簡易 Flood Fill（塗りつぶし）でバウンディングボックスを取得
+function floodFill(edgeImg, startX, startY) {
+    const stack = [[startX, startY]];
+    let minX = startX, maxX = startX, minY = startY, maxY = startY;
+    const width = edgeImg.cols, height = edgeImg.rows;
+
+    while (stack.length > 0) {
+        const [x, y] = stack.pop();
+        if (x < 0 || y < 0 || x >= width || y >= height) continue;
+        if (edgeImg.data[y * width + x] === 0) continue;
+
+        edgeImg.data[y * width + x] = 0; // 塗りつぶし
+
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+
+        stack.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]);
+    }
+
+    if (maxX - minX > 5 && maxY - minY > 5) { // 小さなノイズを除外
+        return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+    return null;
 }
