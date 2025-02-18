@@ -158,7 +158,7 @@ function extractPRegions(img, points) {
         imgElement.src = croppedCanvas.toDataURL();
         imgElement.className = "result-img";
         imgElement.onclick = function () {
-            findMinYInSelection(img, x, y, cropWidth, cropHeight, offsetY);
+            findMinXYInSelection(img, x, y, cropWidth, cropHeight, offsetY);
         };
 
         outputDiv.appendChild(imgElement);
@@ -166,9 +166,9 @@ function extractPRegions(img, points) {
 }
 
 /**
- * 選択した P の画像の中から、R>=220, G<=115, B<=115 を満たす y が最小の座標を取得
+ * 選択した P の画像の中から、X と Y が最小で R>=220, G<=115, B<=115 を満たす座標を取得
  */
-function findMinYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
+function findMinXYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
@@ -176,9 +176,9 @@ function findMinYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0, img.width, img.height);
 
+    let bestX = null;
     let bestY = null;
     let bestRGB = { r: 0, g: 0, b: 0 };
-    let bestX = x;
 
     for (let j = y - offsetY; j < y - offsetY + cropHeight; j++) {
         for (let i = x - cropWidth / 2; i < x + cropWidth / 2; i++) {
@@ -186,16 +186,16 @@ function findMinYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
             const [r, g, b] = imageData.data;
 
             if (r >= 220 && g <= 115 && b <= 115) {
-                if (bestY === null || j < bestY) {
+                if (bestY === null || j < bestY || (j === bestY && i < bestX)) {
                     bestY = j;
-                    bestRGB = { r, g, b };
                     bestX = i;
+                    bestRGB = { r, g, b };
                 }
             }
         }
     }
 
-    if (bestY !== null) {
+    if (bestY !== null && bestX !== null) {
         updateSelectedCoords({ x: bestX, y: bestY }, bestRGB);
     } else {
         document.getElementById("selectedCoords").innerHTML = `<p style="color: red;">条件を満たすピクセルが見つかりませんでした。</p>`;
