@@ -13,7 +13,7 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
     reader.onload = function() {
         const img = new Image();
         img.onload = function() {
-            processImage(img);
+            preprocessImage(img); // 画像の前処理を実行
         };
         img.src = reader.result;
     };
@@ -21,14 +21,40 @@ document.getElementById("uploadForm").addEventListener("submit", function(e) {
     reader.readAsDataURL(file);
 });
 
-function processImage(img) {
+// ** 画像の前処理（グレースケール＆コントラスト調整）**
+function preprocessImage(img) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img, 0, 0, img.width, img.height);
+
+    // グレースケール変換
+    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        const gray = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+        data[i] = gray;      // R
+        data[i + 1] = gray;  // G
+        data[i + 2] = gray;  // B
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // OCRの実行
+    processImage(canvas);
+}
+
+function processImage(canvas) {
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = `<h2>検出中…</h2>`;  // 検出中の表示
 
     // OCR で P の座標を取得（精度を甘くする）
-    Tesseract.recognize(img.src, "eng", {
-        logger: m => console.log(m),  // 進行状況をコンソールに出力
-        tessedit_char_whitelist: "Pp" // 小文字 p も許可して誤検出を増やす
+    Tesseract.recognize(canvas, "ocrb", {  // `ocrb` で精度向上
+        logger: m => console.log(m),
+        tessedit_char_whitelist: "PpFBR" // 「P」に似た文字も許可
     }).then(({ data: { words } }) => {
         outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
@@ -37,7 +63,7 @@ function processImage(img) {
 
         words.forEach(word => {
             if (word.text.toUpperCase() === "P") { // P または p を認識
-                detected = true; // P が見つかった
+                detected = true;
                 const { x0, y0, x1, y1 } = word.bbox;
                 console.log(`P 検出: X=${x0}, Y=${y0}`);
 
@@ -48,7 +74,7 @@ function processImage(img) {
                 const cropSize = 50;
                 croppedCanvas.width = cropSize;
                 croppedCanvas.height = cropSize;
-                ctx.drawImage(img, x0 - cropSize / 2, y0 - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
+                ctx.drawImage(canvas, x0 - cropSize / 2, y0 - cropSize / 2, cropSize, cropSize, 0, 0, cropSize, cropSize);
 
                 // 画像を表示し、クリックで座標を取得
                 const imgElement = document.createElement("img");
