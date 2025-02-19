@@ -9,6 +9,7 @@
 </head>
 <body>
     <h1>停止位置チェッカー</h1>
+    <h3>※ Pixel6限定</h3>
 
     <form id="uploadForm">
         <input type="file" id="fileInput" accept="image/*">
@@ -17,8 +18,9 @@
 
     <!-- しきい値選択ボタン -->
     <div id="thresholdSelection">
-        <p>現在の設定 ： <span id="thresholdDisplay">通常</span></p>
-        <button id="thresholdButton" onclick="toggleThreshold()">甘めにする</button>
+        <p>現在の設定 ： <span id="thresholdDisplay">通常</span>
+            <button id="thresholdButton" onclick="toggleThreshold()">甘めにする</button>
+        </p>
     </div>
 
     <div id="output"></div>

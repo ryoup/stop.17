@@ -1,14 +1,14 @@
-let userThreshold = 0.5; // デフォルトのしきい値
+let userThreshold = 0.45; // デフォルトのしきい値
 
 // ボタンを押すと閾値を切り替える
 function toggleThreshold() {
     const button = document.getElementById("thresholdButton");
-    if (userThreshold === 0.5) {
+    if (userThreshold === 0.45) {
         userThreshold = 0.35;
-        button.innerText = "元に戻す";
+        button.innerText = "通常に戻す";
         document.getElementById("thresholdDisplay").innerText = "甘め";
     } else {
-        userThreshold = 0.5;
+        userThreshold = 0.45;
         button.innerText = "甘めにする";
         document.getElementById("thresholdDisplay").innerText = "通常";
     }
@@ -114,7 +114,7 @@ function processImage(img, templateImg) {
  */
 function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
-    outputDiv.innerHTML = "<h3>候補</h3>";
+    outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
 
     points.forEach(({ x, y }) => {
         const cropWidth = 200;
@@ -172,7 +172,7 @@ function findMinXYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
  * 条件を満たす P の座標と RGB 値を出力
  */
 function updateSelectedCoords(coord, rgb) {
-    document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラの情報:</h3>
-                                                           <p>X,Y ： ${coord.x}, ${coord.y}</p>
-                                                           <p>R,G,B ： ${rgb.r}, ${rgb.g}, ${rgb.b}</p>`;
+    document.getElementById("selectedCoords").innerHTML = `<h3>選択した P の座標:</h3>
+                                                           <p>X: ${coord.x}, Y: ${coord.y}</p>
+                                                           <p>R: ${rgb.r}, G: ${rgb.g}, B: ${rgb.b}</p>`;
 }
