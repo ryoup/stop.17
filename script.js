@@ -14,7 +14,6 @@ function toggleThreshold() {
     }
 }
 
-
 document.getElementById("uploadForm").addEventListener("submit", async function (e) { 
     e.preventDefault();
 
@@ -108,24 +107,31 @@ function processImage(img, templateImg) {
     template.delete();
     dst.delete();
 }
-
 /**
- * 複数の P の候補を切り取って表示
+ * P の候補を表示し、クリックで最小の (x, y) を探す
  */
 function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
-    outputDiv.innerHTML = "<h2>検出された P の候補</h2>";
+    outputDiv.innerHTML = "<h3>候補</h3>";
 
     points.forEach(({ x, y }) => {
         const cropWidth = 200;
         const cropHeight = 200;
         const offsetY = 15;
 
+        // **キャンバスにPの位置を描画**
         const croppedCanvas = document.createElement("canvas");
         const ctx = croppedCanvas.getContext("2d");
         croppedCanvas.width = cropWidth;
         croppedCanvas.height = cropHeight;
         ctx.drawImage(img, x - cropWidth / 2, y - offsetY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+        // **Pの正確な座標を切り取った画像内の相対座標に変換**
+        const relativeX = x - (x - cropWidth / 2) +22;
+        const relativeY = y - (y - offsetY) +30;
+
+        // **Pの位置を○で囲む**
+        drawCircle(ctx, relativeX, relativeY);
 
         const imgElement = document.createElement("img");
         imgElement.src = croppedCanvas.toDataURL();
@@ -137,42 +143,108 @@ function extractPRegions(img, points) {
 }
 
 /**
- * 選択した P の画像の中から、X と Y が最小で R>=220, G<=115, B<=115 を満たす座標を取得
+ * 候補画像のPの位置を○で囲む
  */
-function findMinXYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
+function drawCircle(ctx, x, y) {
+    ctx.strokeStyle = "black"; // 円の色
+    ctx.lineWidth = 5; // 線の太さ
+    ctx.beginPath();
+    ctx.arc(x, y, 28, 0, 2 * Math.PI); // 半径10pxの円
+    ctx.stroke();
+}
+
+/**
+ * 選択した P の元の座標を **originalX + 20, originalY + 30** を基準にして、条件を満たす最小の (X, Y) を取得
+ */
+function findMinXYInSelection(img, originalX, originalY) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
+
+    // **元の画像をキャンバスに描画**
     canvas.width = img.width;
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0, img.width, img.height);
 
-    let bestX, bestY, bestRGB = { r: 0, g: 0, b: 0 };
+    // **基準座標を originalX + 20, originalY + 30 に変更**
+    let baseX = originalX + 15;
+    let baseY = originalY + 30;
 
-    for (let j = y - offsetY; j < y - offsetY + cropHeight; j++) {
-        for (let i = x - cropWidth / 2; i < x + cropWidth / 2; i++) {
-            const [r, g, b] = ctx.getImageData(i, j, 1, 1).data;
-            if (r >= 220 && g <= 115 && b <= 115) {
-                if (bestY === undefined || j < bestY || (j === bestY && i < bestX)) {
-                    bestY = j;
-                    bestX = i;
-                    bestRGB = { r, g, b };
-                }
-            }
+    // **画像の範囲を超えないように調整**
+    baseX = Math.min(Math.max(baseX, 0), img.width - 1);
+    baseY = Math.min(Math.max(baseY, 0), img.height - 1);
+
+    // **基準のRGB値を取得**
+    const basePixelData = ctx.getImageData(baseX, baseY, 1, 1).data;
+    const [baseR, baseG, baseB] = basePixelData;
+
+    // **基準RGBのチェック: G > 115 または B > 115 ならエラー**
+    if (baseR < 95 || baseG > 115 || baseB > 115) {
+        document.getElementById("selectedCoords").innerHTML = `<p style="color: red;">
+            エラー ： 条件を満たしていません。
+        </p>`;
+        return; // **エラー時は処理を中止**
+    }
+
+    let bestY = baseY;
+    let bestX = baseX;
+    let bestRGB = { r: 0, g: 0, b: 0 };
+
+    // **Yの探索: 条件が満たされなくなるまでYを減らす**
+    while (bestY > 0) {
+        if (bestY >= img.height) break;
+        const pixelData = ctx.getImageData(baseX, bestY, 1, 1).data;
+        const [r, g, b, a] = pixelData;
+
+        if (a === 0 || g > 115 || b > 115) {
+            break;
         }
+        bestY--;
+        bestRGB = { r, g, b };
     }
+    bestY++;
 
-    if (bestY !== undefined && bestX !== undefined) {
-        updateSelectedCoords({ x: bestX, y: bestY }, bestRGB);
-    } else {
-        document.getElementById("selectedCoords").innerHTML = `<p style="color: red;">条件を満たすピクセルが見つかりませんでした。</p>`;
+    // **Xの探索: bestY の座標で、条件が満たされなくなるまでXを減らす**
+    while (bestX > 0) {
+        if (bestX >= img.width) break;
+        const pixelData = ctx.getImageData(bestX, bestY, 1, 1).data;
+        const [r, g, b, a] = pixelData;
+
+        if (a === 0 || g > 115 || b > 115) {
+            break;
+        }
+        bestX--;
+        bestRGB = { r, g, b };
     }
+    bestX++;
+
+    // **基準の座標 (baseX, baseY) を画像上にマーク**
+    drawCross(ctx, baseX, baseY);
+
+    // **結果を出力**
+    updateSelectedCoords(baseX, baseY, { x: bestX, y: bestY }, bestRGB, canvas);
 }
 
 /**
- * 条件を満たす P の座標と RGB 値を出力
+ * 画像上に「×」マークを描画（基準のX, Y の位置）
  */
-function updateSelectedCoords(coord, rgb) {
-    document.getElementById("selectedCoords").innerHTML = `<h3>選択した P の座標:</h3>
-                                                           <p>X: ${coord.x}, Y: ${coord.y}</p>
-                                                           <p>R: ${rgb.r}, G: ${rgb.g}, B: ${rgb.b}</p>`;
+function drawCross(ctx, x, y) {
+    ctx.strokeStyle = "red"; // 赤色
+    ctx.lineWidth = 3;
+
+    // **「×」マークを描画**
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y - 10);
+    ctx.lineTo(x + 10, y + 10);
+    ctx.moveTo(x + 10, y - 10);
+    ctx.lineTo(x - 10, y + 10);
+    ctx.stroke();
+}
+
+/**
+ * 選択した P の座標と RGB 値を出力し、基準の座標をマークした画像を表示
+ */
+function updateSelectedCoords(baseX, baseY, coord, rgb, canvas) {
+    document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラの情報</h3>
+                                                           <p>X,Y ： ${coord.x}, ${coord.y}</p>
+                                                           <p>R,G,B ： ${rgb.r}, ${rgb.g}, ${rgb.b}</p>`;
 }
