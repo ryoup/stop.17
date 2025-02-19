@@ -22,23 +22,62 @@ input[type="file"] {
     margin: 10px 0;
 }
 
+#uploadForm {
+    margin: 20px 0;
+}
+
+#fileInput {
+    padding: 10px;
+}
+
 /* 解析開始ボタンを大きくする */
-button {
-    font-size: 20px;
-    padding: 15px 30px;
+#startButton {
+    font-size: 18px;
+    padding: 12px 20px;
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    margin-top: 10px;
 }
 
-button:hover {
+#startButton:hover {
     background-color: #0056b3;
 }
 
+/* 閾値表示とボタンを横並びに */
+#thresholdSelection {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
+#thresholdSelection p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+/* 閾値設定ボタンを小さくし、右側に配置 */
+#thresholdButton {
+    font-size: 12px;
+    padding: 4px 8px;
+    background-color: #ccc;
+    color: black;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 20px; /* しきい値の右に配置 */
+}
+
+#thresholdButton:hover {
+    background-color: #aaa;
+}
+
+/* 出力エリアを調整 */
 #output {
     display: flex;
     flex-wrap: wrap;
@@ -47,14 +86,16 @@ button:hover {
     margin-top: 20px;
 }
 
+/* 検出画像のスタイル */
 .result-img {
-    display: block; /* 画像を改行表示 */
-    margin-top: 5px; /* 画像とテキストの間隔を調整 */
-    width: 100px; /* 画像サイズを調整 */
+    display: block;
+    margin-top: 5px;
+    width: 100px;
     height: 100px;
-    cursor: pointer; /* クリックしやすく */
+    cursor: pointer;
+    border-radius: 5px;
+    transition: transform 0.2s ease-in-out;
 }
-
 
 .result-img:hover {
     transform: scale(1.1);

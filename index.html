@@ -9,12 +9,21 @@
 </head>
 <body>
     <h1>停止位置チェッカー</h1>
+
     <form id="uploadForm">
-        <input type="file" id="fileInput" accept="image/*"><br><br>
-        <button type="submit">解析開始</button>
+        <input type="file" id="fileInput" accept="image/*">
+        <button type="submit" id="startButton">解析開始</button>
     </form>
-    <div id="output"></div> <!-- P の候補を表示 --><br><br>
-    <div id="selectedCoords"></div> <!-- 選択した座標を表示 -->
+
+    <!-- しきい値選択ボタン -->
+    <div id="thresholdSelection">
+        <p>現在の設定 ： <span id="thresholdDisplay">通常</span></p>
+        <button id="thresholdButton" onclick="toggleThreshold()">甘めにする</button>
+    </div>
+
+    <div id="output"></div>
+    <div id="selectedCoords"></div>
+
     <script src="script.js"></script>
 </body>
 </html>

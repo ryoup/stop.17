@@ -1,5 +1,22 @@
+let userThreshold = 0.5; // デフォルトのしきい値
+
+// ボタンを押すと閾値を切り替える
+function toggleThreshold() {
+    const button = document.getElementById("thresholdButton");
+    if (userThreshold === 0.5) {
+        userThreshold = 0.35;
+        button.innerText = "元に戻す";
+        document.getElementById("thresholdDisplay").innerText = "甘め";
+    } else {
+        userThreshold = 0.5;
+        button.innerText = "甘めにする";
+        document.getElementById("thresholdDisplay").innerText = "通常";
+    }
+}
+
+
 document.getElementById("uploadForm").addEventListener("submit", async function (e) { 
-    e.preventDefault(); // ページリロードを防止
+    e.preventDefault();
 
     const fileInput = document.getElementById("fileInput");
     if (fileInput.files.length === 0) {
@@ -66,7 +83,7 @@ function processImage(img, templateImg) {
     const dst = new cv.Mat();
     cv.matchTemplate(src, template, dst, cv.TM_CCOEFF_NORMED);
 
-    const threshold = 0.5;
+    const threshold = userThreshold; // ユーザーが選択した閾値
     const points = [];
     const minDistance = 20;
 
@@ -97,7 +114,7 @@ function processImage(img, templateImg) {
  */
 function extractPRegions(img, points) {
     const outputDiv = document.getElementById("output");
-    outputDiv.innerHTML = "<h3>キャラ候補</h3>";
+    outputDiv.innerHTML = "<h3>候補</h3>";
 
     points.forEach(({ x, y }) => {
         const cropWidth = 200;
@@ -155,7 +172,7 @@ function findMinXYInSelection(img, x, y, cropWidth, cropHeight, offsetY) {
  * 条件を満たす P の座標と RGB 値を出力
  */
 function updateSelectedCoords(coord, rgb) {
-    document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラのデータ</h3>
+    document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラの情報:</h3>
                                                            <p>X,Y ： ${coord.x}, ${coord.y}</p>
                                                            <p>R,G,B ： ${rgb.r}, ${rgb.g}, ${rgb.b}</p>`;
 }
