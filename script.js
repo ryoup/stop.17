@@ -240,12 +240,20 @@ function drawCross(ctx, x, y) {
     ctx.stroke();
 }
 
+
 /**
  * 選択した P の座標と RGB 値を出力し、基準の座標をマークした画像を表示
  */
 function updateSelectedCoords(baseX, baseY, coord, rgb, canvas) {
+
+    let xi = String(coord.x).padStart(4, '0')
+    let yi = String(coord.y).padStart(4, '0')
+    let ri = String(rgb.r).padStart(3, '0')
+    let bi = String(rgb.g).padStart(3, '0')
+    let gi = String(rgb.b).padStart(3, '0')
+
     document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラの情報</h3>
                                                            <p>X,Y ： ${coord.x}, ${coord.y}</p>
                                                            <p>R,G,B ： ${rgb.r}, ${rgb.g}, ${rgb.b}</p>
-                                                           <p>${coord.x},${coord.y},${rgb.r},${rgb.g},${rgb.b}</p>`;
+                                                           <p>${xi}/${yi}/${ri}/${gi}/${bi}</p>`;
 }
