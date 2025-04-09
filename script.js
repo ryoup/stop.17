@@ -247,5 +247,5 @@ function updateSelectedCoords(baseX, baseY, coord, rgb, canvas) {
     document.getElementById("selectedCoords").innerHTML = `<h3>選択キャラの情報</h3>
                                                            <p>X,Y ： ${coord.x}, ${coord.y}</p>
                                                            <p>R,G,B ： ${rgb.r}, ${rgb.g}, ${rgb.b}</p>
-                                                           <p>${coord.x}${coord.y}${rgb.r}${rgb.g}${rgb.b}</p>`;
+                                                           <p>${coord.x},${coord.y},${rgb.r},${rgb.g},${rgb.b}</p>`;
 }
