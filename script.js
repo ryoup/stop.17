@@ -30,7 +30,7 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
         const img = new Image();
         img.src = reader.result;
         img.onload = async function () {
-            const templateImg = await loadTemplateImage("https://ryoup.github.io/3bMRQu247Wtr8pMABzdUVweAFXmnCYHYKuX5ZYX7BhaRMUSHSf7c7scUABxaFfRRRuZ3j85WH4bN4CVMQ2aMQ7sWigCRhEgSg7dw/template.png");
+            const templateImg = await loadTemplateImage("https://ryoup.github.io/stop.16promax/template.png");
             if (!templateImg) {
                 document.getElementById("output").innerHTML = `<p style="color: red;">テンプレート画像の取得に失敗しました。</p>`;
                 return;
