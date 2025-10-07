@@ -149,7 +149,7 @@ function drawCircle(ctx, x, y) {
     ctx.strokeStyle = "black"; // 円の色
     ctx.lineWidth = 10; // 線の太さ
     ctx.beginPath();
-    ctx.arc(x, y, 32, 0, 2 * Math.PI); // 半径10pxの円
+    ctx.arc(x, y, 30, 0, 2 * Math.PI); // 半径10pxの円
     ctx.stroke();
 }
 
@@ -166,7 +166,7 @@ function findMinXYInSelection(img, originalX, originalY) {
     ctx.drawImage(img, 0, 0, img.width, img.height);
 
     // **基準座標を originalX + 20, originalY + 30 に変更**
-    let baseX = originalX + 10;
+    let baseX = originalX - 100;
     let baseY = originalY + 30;
 
     // **画像の範囲を超えないように調整**
